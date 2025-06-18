@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, DollarSign, ShoppingCart, TrendingUp, X, Settings, Menu, Crown } from "lucide-react";
+import { LayoutDashboard, DollarSign, ShoppingCart, TrendingUp, X, Menu, Crown } from "lucide-react";
 
 const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -8,7 +8,6 @@ const navigation = [
     { name: 'Add Sale', href: '/add-sale', icon: ShoppingCart },
     { name: 'Expenses', href: '/expenses', icon: TrendingUp },
     { name: 'Analytics', href: '/analytics', icon: TrendingUp },
-    { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 interface LayoutProps {

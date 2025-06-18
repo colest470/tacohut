@@ -1,10 +1,9 @@
-import React from 'react'
 import { TrendingUp, Calendar, Star, Target } from 'lucide-react'
 import { useSales } from '../context/SalesContext'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
-const COLORS = ['#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa']
+// const COLORS = ['#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa']
 
 export default function Analytics() {
   const { sales, expenses, getWeeklyAnalysis, getDailySummary } = useSales()
@@ -107,7 +106,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`KES ${value}`, 'Profit']} />
+                <Tooltip formatter={(value: any) => [`KES ${value}`, 'Profit']} />
                 <Bar dataKey="profit" fill="#ea580c" />
               </BarChart>
             </ResponsiveContainer>
@@ -125,7 +124,7 @@ export default function Analytics() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -149,7 +148,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="category" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`KES ${value}`, 'Amount']} />
+                <Tooltip formatter={(value: any) => [`KES ${value}`, 'Amount']} />
                 <Bar dataKey="amount" fill="#dc2626" />
               </BarChart>
             </ResponsiveContainer>

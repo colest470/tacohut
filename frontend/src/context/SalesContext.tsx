@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react'
-import { Sale, MenuItem, InventoryExpense, DailySummary, WeeklyAnalysis } from '../types'
+import React, { createContext, useContext, useState } from 'react'
+import type { Sale, MenuItem, InventoryExpense, DailySummary, WeeklyAnalysis } from '../types/index'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns'
 
 interface SalesContextType {

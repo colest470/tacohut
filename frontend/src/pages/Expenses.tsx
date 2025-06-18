@@ -26,7 +26,7 @@ export default function Expenses() {
     description: '',
     amount: '',
     category: 'ingredients' as const,
-    paymentMethod: 'cash' as const,
+    paymentMethod: "cash",
     mpesaCode: ''
   })
 

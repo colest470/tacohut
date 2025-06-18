@@ -13,7 +13,7 @@ import { useSales } from '../context/SalesContext'
 import { format } from 'date-fns'
 
 export default function Dashboard() {
-  const { sales, expenses, getTotalProfit, getMostProductiveDay, getDailySummary } = useSales()
+  const { sales, expenses, getTotalProfit, getMostProductiveDay, getDailySummary } = useSales() // this is a mock info
 
   const today = new Date()
   const todaySummary = getDailySummary(today)

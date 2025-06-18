@@ -1,7 +1,14 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Plus, Minus, ShoppingCart, Smartphone, Banknote } from 'lucide-react'
 import { useSales } from '../context/SalesContext'
-import { SaleItem } from '../types'
+
+interface SaleItem {
+  menuItemId: string
+  name: string
+  quantity: number
+  price: number
+  cost: number
+}
 
 export default function AddSale() {
   const { menuItems, addSale } = useSales()

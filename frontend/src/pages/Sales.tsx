@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { DollarSign, Smartphone, Banknote, Calendar, Search, Filter } from 'lucide-react'
 import { useSales } from '../context/SalesContext'
 import { format } from 'date-fns'
@@ -123,7 +123,7 @@ export default function Sales() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip formatter={(value, name) => [
+                <Tooltip formatter={({value, name}: any) => [
                   name === 'revenue' ? `KES ${value}` : value,
                   name === 'revenue' ? 'Revenue' : 'Orders'
                 ]} />
@@ -142,7 +142,7 @@ export default function Sales() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`KES ${value}`, 'Revenue']} />
+                <Tooltip formatter={(value: any) => [`KES ${value}`, 'Revenue']} />
                 <Bar dataKey="revenue" fill="#ea580c" />
               </BarChart>
             </ResponsiveContainer>
