@@ -14,8 +14,8 @@ export default function AddSale() {
   const { menuItems, addSale } = useSales()
   const [cart, setCart] = useState<SaleItem[]>([])
   const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'cash'>('mpesa')
-  const [mpesaCode, setMpesaCode] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
+  // const [mpesaCode, setMpesaCode] = useState('')
+  // const [customerPhone, setCustomerPhone] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
 
   const addToCart = (menuItem: any) => {
@@ -71,15 +71,33 @@ export default function AddSale() {
       items: cart,
       total: getTotalAmount(),
       paymentMethod,
-      ...(paymentMethod === 'mpesa' && { mpesaCode, customerPhone })
+      //...(paymentMethod === 'mpesa' && { mpesaCode, customerPhone }) // this code might be important
     }
 
-    addSale(saleData)
+    console.log(saleData);
+
+    //addSale(saleData) // instead save to db
+
+    try {
+      const response = await fetch("http://localhost:8080/api/saledata", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify(saleData)
+      })
+
+      if (!response.ok) {
+        throw new Error("Check your server if it is on!");
+      }
+    } catch (error) {
+      console.error(error); // ui display or not entered into the database 
+    }
     
     // Reset form
     setCart([])
-    setMpesaCode('')
-    setCustomerPhone('')
+    // setMpesaCode('')
+    // setCustomerPhone('')
     setIsProcessing(false)
     
     alert('Sale processed successfully!')
@@ -212,18 +230,18 @@ export default function AddSale() {
 
               {paymentMethod === 'mpesa' && (
                 <div className="space-y-3">
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       M-Pesa Code
                     </label>
-                    <input
+                     <input
                       type="text"
                       value={mpesaCode}
                       onChange={(e) => setMpesaCode(e.target.value)}
                       placeholder="e.g., QA12B3C4D5"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                    />
-                  </div>
+                    /> 
+                  </div> 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Customer Phone (Optional)
@@ -235,13 +253,13 @@ export default function AddSale() {
                       placeholder="+254700123456"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
-                  </div>
+                  </div> */}
                 </div>
               )}
 
               <button
                 onClick={handleProcessSale}
-                disabled={isProcessing || cart.length === 0 || (paymentMethod === 'mpesa' && !mpesaCode)}
+                disabled={isProcessing || cart.length === 0} // || (paymentMethod === 'mpesa') && !mpesaCode
                 className="w-full mt-4 bg-orange-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-orange-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 {isProcessing ? 'Processing...' : `Process Sale - KES ${getTotalAmount().toLocaleString()}`}

@@ -11,14 +11,28 @@ import {
 } from 'lucide-react'
 import { useSales } from '../context/SalesContext'
 import { format } from 'date-fns'
+import { useEffect } from 'react'
 
 export default function Dashboard() {
   const { sales, expenses, getTotalProfit, getMostProductiveDay, getDailySummary } = useSales() // this is a mock info
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await fetch("http://localhost:8080/");
+        if (!response.ok) {
+          throw new Error("Error getting to server!")
+        }
+      } catch (error) {
+        console.error(error) // might also not connect to database so return error and a ui display
+      }
+    })();
+  }, []);
+
   const today = new Date()
   const todaySummary = getDailySummary(today)
-  const totalProfit = getTotalProfit()
-  const mostProductiveDay = getMostProductiveDay()
+  const totalProfit = getTotalProfit();
+  const mostProductiveDay = getMostProductiveDay();
 
   // Recent sales (last 5)
   const recentSales = sales.slice(0, 5)

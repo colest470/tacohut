@@ -10,6 +10,7 @@ import (
 	"tacohut/middleware"
 
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -27,13 +28,23 @@ func main() {
 	port := os.Getenv("PORT")
 
 	mux.HandleFunc("/", handlers.HandleRoot)
-	// handlers
+	mux.HandleFunc("/api/saledata", handlers.Saledata)
 
-	wrappedMux := middlewares.ConnectDb(mux)
+	handlerWithDB := middlewares.ConnectDb(mux)
 
-	fmt.Println("Server listening in port:", port)
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", ""},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: false,
+		Debug:            false,
+	})
+	finalHandler := c.Handler(handlerWithDB)
 
-	if err := http.ListenAndServe(port, wrappedMux); err != nil {
+	fmt.Println("Server listening in port", port)
+
+	if err := http.ListenAndServe(port, finalHandler); err != nil {
 		log.Fatal("Error creating server", err)
 	}
 }
+
