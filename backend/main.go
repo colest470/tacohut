@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	
 	"tacohut/handlers"
-	"tacohut/middleware"
+	"tacohut/middlewares"
 
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
@@ -29,6 +30,7 @@ func main() {
 
 	mux.HandleFunc("/", handlers.HandleRoot)
 	mux.HandleFunc("/api/saledata", handlers.Saledata)
+	mux.HandleFunc("/api/fetchSaleData", handlers.FetchSaleData)
 
 	handlerWithDB := middlewares.ConnectDb(mux)
 

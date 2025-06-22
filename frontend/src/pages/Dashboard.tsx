@@ -20,9 +20,14 @@ export default function Dashboard() {
     (async () => {
       try {
         const response = await fetch("http://localhost:8080/");
+        
         if (!response.ok) {
           throw new Error("Error getting to server!")
         }
+
+        const data = await response.json();
+
+        console.log(data);
       } catch (error) {
         console.error(error) // might also not connect to database so return error and a ui display
       }

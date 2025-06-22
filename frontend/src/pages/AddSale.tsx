@@ -8,14 +8,15 @@ interface SaleItem {
   quantity: number
   price: number
   cost: number
+  time: Date
 }
 
 export default function AddSale() {
   const { menuItems, addSale } = useSales()
   const [cart, setCart] = useState<SaleItem[]>([])
   const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'cash'>('mpesa')
-  // const [mpesaCode, setMpesaCode] = useState('')
-  // const [customerPhone, setCustomerPhone] = useState('')
+  // const [mpesaCode, setMpesaCode] = useState('');
+  // const [customerPhone, setCustomerPhone] = useState('');
   const [isProcessing, setIsProcessing] = useState(false)
 
   const addToCart = (menuItem: any) => {
@@ -32,7 +33,8 @@ export default function AddSale() {
         name: menuItem.name,
         quantity: 1,
         price: menuItem.price,
-        cost: menuItem.cost
+        cost: menuItem.cost,
+        time: new Date
       }])
     }
   }
@@ -62,7 +64,7 @@ export default function AddSale() {
   const handleProcessSale = async () => {
     if (cart.length === 0) return
 
-    setIsProcessing(true)
+    setIsProcessing(true);
     
     // Simulate processing delay
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -76,23 +78,23 @@ export default function AddSale() {
 
     console.log(saleData);
 
-    //addSale(saleData) // instead save to db
+    //addSale(saleData) // instead save to db   
 
-    try {
-      const response = await fetch("http://localhost:8080/api/saledata", {
-        method: "POST",
-        headers: {
-          "Content-type": "application/json"
-        },
-        body: JSON.stringify(saleData)
-      })
+    // try {
+    //   const response = await fetch("http://localhost:8080/api/saledata", {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-type": "application/json"
+    //     },
+    //     body: JSON.stringify(saleData)
+    //   });
 
-      if (!response.ok) {
-        throw new Error("Check your server if it is on!");
-      }
-    } catch (error) {
-      console.error(error); // ui display or not entered into the database 
-    }
+    //   if (!response.ok) {
+    //     throw new Error("Check your server if it is on!");
+    //   }
+    // } catch (error) {
+    //   console.error(error); // ui display or not entered into the database 
+    // }
     
     // Reset form
     setCart([])

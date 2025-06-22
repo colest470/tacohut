@@ -121,38 +121,52 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
   const [menuItems] = useState<MenuItem[]>([
     {
       id: '1',
-      name: 'Carne Asada Taco',
-      price: 250,
+      name: 'Beef taco',
+      price: 70,
       category: 'Tacos',
-      cost: 120
+      cost: 47
     },
     {
       id: '2',
       name: 'Chicken Taco',
-      price: 220,
+      price: 90,
       category: 'Tacos',
-      cost: 100
+      cost: 70
     },
     {
       id: '3',
-      name: 'Guacamole & Chips',
-      price: 180,
+      name: 'Chips',
+      price: 100,
       category: 'Sides',
       cost: 80
     },
     {
       id: '4',
-      name: 'Beef Burrito',
-      price: 350,
-      category: 'Burritos',
-      cost: 180
+      name: "Grape lemonade",
+      price: 55,
+      category: "Drink",
+      cost: 70
     },
     {
       id: '5',
-      name: 'Chicken Quesadilla',
-      price: 280,
-      category: 'Quesadillas',
-      cost: 140
+      name: 'Lemonade',
+      price: 50,
+      category: 'Drink',
+      cost: 35
+    },
+    {
+      id: "6",
+      name: "Chilli dogs",
+      price: 100,
+      category: "Sides",
+      cost: 85
+    },
+    {
+      id: "7",
+      name: "Chilli fries",
+      price: 150,
+      category: "Sides",
+      cost: 135
     }
   ])
 
