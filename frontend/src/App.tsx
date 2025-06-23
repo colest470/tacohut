@@ -5,7 +5,7 @@ import Sales from './pages/Sales'
 import AddSale from './pages/AddSale'
 import Expenses from './pages/Expenses'
 import Analytics from './pages/Analytics'
-// import Settings from './pages/Settings'
+import Settings from './pages/Settings'
 import { SalesProvider } from './context/SalesContext'
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
           <Route path="/add-sale" element={<AddSale />} />
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/analytics" element={<Analytics />} />
-          {/* <Route path="/settings" element={<Settings />} /> */}
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>
     </SalesProvider>

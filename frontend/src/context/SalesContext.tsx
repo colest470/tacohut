@@ -143,9 +143,9 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
     {
       id: '4',
       name: "Grape lemonade",
-      price: 55,
+      price: 70,
       category: "Drink",
-      cost: 70
+      cost: 50
     },
     {
       id: '5',

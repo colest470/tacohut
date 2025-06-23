@@ -1,63 +1,212 @@
-import { Link } from 'react-router-dom'
-import { 
-  DollarSign, 
-  TrendingUp, 
-  ShoppingCart, 
+import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  DollarSign,
+  TrendingUp,
+  ShoppingCart,
   Calendar,
   Smartphone,
   Banknote,
   ArrowRight,
   Star
-} from 'lucide-react'
-import { useSales } from '../context/SalesContext'
-import { format } from 'date-fns'
-import { useEffect } from 'react'
+} from 'lucide-react';
+import { format } from 'date-fns';
+
+// Define TypeScript interfaces to match your Go backend data structures
+interface MenuItem {
+  menuItemId: string;
+  name: string;
+  quantity: number; // Used in calculating total expenses for each sale item
+  price: number;
+  cost: number;
+  time: string; // ISO 8601 string, e.g., "2025-06-22T10:30:00Z"
+}
+
+interface SalesData {
+  ID: string; // MongoDB ObjectId comes as a string
+  items: MenuItem[];
+  paymentMethod: string;
+  total: number; // Represents the total sales value for this specific transaction
+  recordedAt: string; // ISO 8601 string for time.Time (when the sale was recorded in DB)
+}
+
+// Interface for the overall API response
+interface FetchSalesResponse {
+  status: string;
+  data: SalesData[];
+}
 
 export default function Dashboard() {
-  const { sales, expenses, getTotalProfit, getMostProductiveDay, getDailySummary } = useSales() // this is a mock info
+  // Use useState to manage the fetched sales data
+  const [sales, setSales] = useState<SalesData[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
+    const fetchSalesData = async () => {
+      setLoading(true);
+      setError(null); // Clear previous errors
       try {
-        const response = await fetch("http://localhost:8080/");
-        
+        // Corrected endpoint URL to match the Go backend's fetch handler
+        const response = await fetch("http://localhost:8080/fetchSaleData");
+
         if (!response.ok) {
-          throw new Error("Error getting to server!")
+          // Attempt to read error message from server if available
+          const errorText = await response.text();
+          throw new Error(`Server error: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
-        const data = await response.json();
+        const result: FetchSalesResponse = await response.json();
 
-        console.log(data);
-      } catch (error) {
-        console.error(error) // might also not connect to database so return error and a ui display
+        if (result.status === "success") {
+          setSales(result.data); // Update the sales state with fetched data
+          console.log("Fetched sales data:", result.data);
+        } else {
+          throw new Error(`API returned non-success status: ${result.status}`);
+        }
+      } catch (err: any) {
+        console.error("Error fetching sales data:", err);
+        setError(`Failed to load sales data: ${err.message}. Please ensure the backend server is running and accessible.`);
+      } finally {
+        setLoading(false);
       }
-    })();
-  }, []);
+    };
 
-  const today = new Date()
-  const todaySummary = getDailySummary(today)
+    fetchSalesData();
+  }, []); // Empty dependency array means this runs once on component mount
+
+  const today = new Date();
+
+  // --- Utility functions to calculate metrics based on the 'sales' state ---
+  // Memoize these calculations to prevent re-running on every render
+  // unless 'sales' changes.
+
+  const getDailySummary = useMemo(() => (date: Date) => {
+    // Create new Date objects to avoid modifying the original 'date' object
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const dailySales = sales.filter(sale => {
+      const saleDate = new Date(sale.recordedAt); // Parse recordedAt string to Date
+      return saleDate >= startOfDay && saleDate <= endOfDay;
+    });
+
+    let totalSales = 0; // Sum of `sale.total` for the day
+    let totalExpenses = 0; // Sum of (item.cost * item.quantity) for the day
+    let salesCount = 0; // Number of sales transactions for the day
+
+    dailySales.forEach(sale => {
+      totalSales += sale.total; // Use the total from the sale object
+      salesCount++;
+      sale.items.forEach(item => {
+        totalExpenses += item.cost * item.quantity; // Sum individual item costs
+      });
+    });
+
+    const netProfit = totalSales - totalExpenses;
+
+    // Note: If netProfit is consistently 0, it likely means the 'recordedAt'
+    // timestamps in your MongoDB data are not correctly set to the current date.
+    // Please verify the 'recordedAt' field values in your database for recent sales.
+    // The Go backend is designed to set 'recordedAt' to time.Now() on new insertions.
+
+    return {
+      totalSales,
+      totalExpenses,
+      netProfit,
+      salesCount,
+      dailySales, // Optionally return the filtered sales for further use
+    };
+  }, [sales]);
+
+  const todaySummary = getDailySummary(today);
+
+  const getTotalProfit = useMemo(() => () => {
+    let totalSalesValue = 0;
+    let totalCosts = 0;
+
+    sales.forEach(sale => {
+      totalSalesValue += sale.total;
+      sale.items.forEach(item => {
+        totalCosts += item.cost * item.quantity;
+      });
+    });
+    return totalSalesValue - totalCosts;
+  }, [sales]);
+
   const totalProfit = getTotalProfit();
+
+  const getMostProductiveDay = useMemo(() => () => {
+    if (sales.length === 0) return "N/A";
+
+    const dailySalesMap: { [key: string]: number } = {}; // Date string -> total sales for that day
+
+    sales.forEach(sale => {
+      const dateKey = format(new Date(sale.recordedAt), 'yyyy-MM-dd'); // Use recordedAt
+      dailySalesMap[dateKey] = (dailySalesMap[dateKey] || 0) + sale.total;
+    });
+
+    let bestDay = "N/A";
+    let maxSales = 0;
+
+    for (const dateKey in dailySalesMap) {
+      if (dailySalesMap[dateKey] > maxSales) {
+        maxSales = dailySalesMap[dateKey];
+        bestDay = format(new Date(dateKey), 'MMM dd, yyyy'); // Format for display
+      }
+    }
+    return bestDay;
+  }, [sales]);
+
   const mostProductiveDay = getMostProductiveDay();
 
-  // Recent sales (last 5)
-  const recentSales = sales.slice(0, 5)
+  // Recent sales (last 5) - using the actual 'sales' state
+  const recentSales = sales
+    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()) // Sort by most recent
+    .slice(0, 5);
 
   // Payment method breakdown
-  const mpesaSales = sales.filter(s => s.paymentMethod === 'mpesa').length
-  const cashSales = sales.filter(s => s.paymentMethod === 'cash').length
-  const mpesaPercentage = sales.length > 0 ? Math.round((mpesaSales / sales.length) * 100) : 0
+  const mpesaSales = sales.filter(s => s.paymentMethod === 'mpesa').length;
+  const cashSales = sales.filter(s => s.paymentMethod === 'cash').length;
+  const mpesaPercentage = sales.length > 0 ? Math.round((mpesaSales / sales.length) * 100) : 0;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-orange-500"></div>
+        <p className="ml-4 text-xl text-gray-700">Loading sales data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-red-50 p-6 rounded-lg shadow-md">
+        <div className="text-center text-red-700">
+          <p className="text-xl font-bold mb-2">Error!</p>
+          <p>{error}</p>
+          <p className="mt-4 text-sm text-red-500">
+            Please ensure your Go backend server is running and accessible at `http://localhost:8080/fetchSaleData`.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 font-inter bg-gray-100 min-h-screen rounded-lg">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-6 rounded-xl shadow-sm border border-gray-200">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Sales Dashboard</h1>
           <p className="text-gray-600 mt-1">
             Welcome to your Taco Hut command center
           </p>
         </div>
-        <div className="text-right">
+        <div className="text-right mt-4 sm:mt-0">
           <div className="text-sm text-gray-500">
             {format(today, 'EEEE, MMMM do')}
           </div>
@@ -141,31 +290,33 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-3">
-            {recentSales.map(sale => (
-              <div key={sale.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-gray-900">
-                    KES {sale.total.toLocaleString()}
+            {recentSales.length > 0 ? (
+              recentSales.map(sale => (
+                <div key={sale.ID} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium text-gray-900">
+                      KES {sale.total.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {sale.items.length} items • {sale.paymentMethod}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {sale.items.length} items • {sale.paymentMethod}
-                    {sale.mpesaCode && ` • ${sale.mpesaCode}`}
+                  <div className="text-right">
+                    {/* Ensure recordedAt is parsed correctly to Date */}
+                    <div className="text-sm text-gray-500">
+                      {format(new Date(sale.recordedAt), 'HH:mm')}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {format(new Date(sale.recordedAt), 'MMM dd')}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm text-gray-500">
-                    {format(new Date(sale.timestamp), 'HH:mm')}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {format(new Date(sale.timestamp), 'MMM dd')}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {recentSales.length === 0 && (
+              ))
+            ) : (
               <div className="text-center py-6 text-gray-500">
                 <ShoppingCart className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                <p>No sales yet today</p>
+                <p>No sales data available.</p>
+                <p className="text-sm">Make sure you've added some sales via the backend.</p>
               </div>
             )}
           </div>
@@ -225,5 +376,5 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }

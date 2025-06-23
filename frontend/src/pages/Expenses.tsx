@@ -27,7 +27,6 @@ export default function Expenses() {
     amount: '',
     category: 'ingredients' as const,
     paymentMethod: "cash",
-    mpesaCode: ''
   })
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
@@ -36,16 +35,26 @@ export default function Expenses() {
     return acc
   }, {} as Record<string, number>)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.description || !formData.amount) return
+    if (!formData.description || !formData.amount) return;
 
-    addExpense({
-      description: formData.description,
-      amount: parseFloat(formData.amount),
-      category: formData.category,
-      paymentMethod: formData.paymentMethod,
-      ...(formData.paymentMethod === 'mpesa' && { mpesaCode: formData.mpesaCode })
+    // addExpense({
+    //   description: formData.description,
+    //   amount: parseFloat(formData.amount),
+    //   category: formData.category,
+    //   paymentMethod: formData.paymentMethod,
+    //   ...(formData.paymentMethod === 'mpesa' && { mpesaCode: formData.mpesaCode })
+    // })
+
+    console.log(formData);
+
+    const request = await fetch("http://localhost:8080/api/expenseData", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(formData)
     })
 
     setFormData({
@@ -53,7 +62,6 @@ export default function Expenses() {
       amount: '',
       category: 'ingredients',
       paymentMethod: 'cash',
-      mpesaCode: ''
     })
     setShowAddForm(false)
   }
@@ -159,9 +167,8 @@ export default function Expenses() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   <option value="ingredients">Ingredients</option>
-                  <option value="supplies">Supplies</option>
                   <option value="equipment">Equipment</option>
-                  <option value="utilities">Utilities</option>
+                  <option value="worker">worker</option>
                   <option value="other">Other</option>
                 </select>
               </div>
@@ -196,7 +203,7 @@ export default function Expenses() {
                 </div>
               </div>
 
-              {formData.paymentMethod === 'mpesa' && (
+              {/* {formData.paymentMethod === 'mpesa' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     M-Pesa Code
@@ -209,7 +216,7 @@ export default function Expenses() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
-              )}
+              )} */}
 
               <div className="flex space-x-3 pt-4">
                 <button

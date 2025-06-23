@@ -80,21 +80,21 @@ export default function AddSale() {
 
     //addSale(saleData) // instead save to db   
 
-    // try {
-    //   const response = await fetch("http://localhost:8080/api/saledata", {
-    //     method: "POST",
-    //     headers: {
-    //       "Content-type": "application/json"
-    //     },
-    //     body: JSON.stringify(saleData)
-    //   });
+    try {
+      const response = await fetch("http://localhost:8080/api/saledata", {
+        method: "POST",
+        headers: {
+          "Content-type": "application/json"
+        },
+        body: JSON.stringify(saleData)
+      });
 
-    //   if (!response.ok) {
-    //     throw new Error("Check your server if it is on!");
-    //   }
-    // } catch (error) {
-    //   console.error(error); // ui display or not entered into the database 
-    // }
+      if (!response.ok) {
+        throw new Error("Check your server if it is on!");
+      }
+    } catch (error) {
+      console.error(error); // ui display or not entered into the database 
+    }
     
     // Reset form
     setCart([])
