@@ -17,11 +17,17 @@ import (
 var (
 	MongoClient *mongo.Client
 	TacoDB *mongo.Database
+	ExpensesDB *mongo.Database
+	DailyAnalytics *mongo.Database
 )
 
 func ConnectDb(next http.Handler) http.Handler {
 	var initOnce sync.Mutex
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/close" && r.Method == "POST" {
+			return 
+		}
+
 		fmt.Println("Connecting to database...")
 
 		initOnce.Lock()
@@ -46,7 +52,6 @@ func ConnectDb(next http.Handler) http.Handler {
 			return
 		}
 
-		// Ping the primary to verify that the client connection was successful
 		err = client.Ping(ctx, nil)
 		if err != nil {
 			log.Fatalf("Failed to ping MongoDB: %v", err)
@@ -57,8 +62,10 @@ func ConnectDb(next http.Handler) http.Handler {
 		MongoClient = client
 		
 		TacoDB = MongoClient.Database("tacohut")
+		ExpensesDB = MongoClient.Database("expenses")
+		DailyAnalytics = MongoClient.Database("dailyExpenses")
 
-		fmt.Println("Connected to databases:", TacoDB.Name())
+		fmt.Println("Connected to databases:", TacoDB.Name(), ExpensesDB.Name(), DailyAnalytics.Name())
 
 		next.ServeHTTP(w, r)
 	})

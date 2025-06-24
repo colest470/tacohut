@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   DollarSign,
@@ -12,22 +12,21 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-// Define TypeScript interfaces to match your Go backend data structures
 interface MenuItem {
   menuItemId: string;
   name: string;
-  quantity: number; // Used in calculating total expenses for each sale item
+  quantity: number; 
   price: number;
   cost: number;
-  time: string; // ISO 8601 string, e.g., "2025-06-22T10:30:00Z"
+  time: string;
 }
 
 interface SalesData {
-  ID: string; // MongoDB ObjectId comes as a string
+  ID: string;
   items: MenuItem[];
   paymentMethod: string;
-  total: number; // Represents the total sales value for this specific transaction
-  recordedAt: string; // ISO 8601 string for time.Time (when the sale was recorded in DB)
+  total: number;
+  recordedAt: string;
 }
 
 // Interface for the overall API response
@@ -45,13 +44,11 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchSalesData = async () => {
       setLoading(true);
-      setError(null); // Clear previous errors
+      setError(null); 
       try {
-        // Corrected endpoint URL to match the Go backend's fetch handler
         const response = await fetch("http://localhost:8080/fetchSaleData");
 
         if (!response.ok) {
-          // Attempt to read error message from server if available
           const errorText = await response.text();
           throw new Error(`Server error: ${response.status} ${response.statusText} - ${errorText}`);
         }
@@ -59,7 +56,7 @@ export default function Dashboard() {
         const result: FetchSalesResponse = await response.json();
 
         if (result.status === "success") {
-          setSales(result.data); // Update the sales state with fetched data
+          setSales(result.data);
           console.log("Fetched sales data:", result.data);
         } else {
           throw new Error(`API returned non-success status: ${result.status}`);
@@ -73,16 +70,11 @@ export default function Dashboard() {
     };
 
     fetchSalesData();
-  }, []); // Empty dependency array means this runs once on component mount
+  }, []);
 
   const today = new Date();
 
-  // --- Utility functions to calculate metrics based on the 'sales' state ---
-  // Memoize these calculations to prevent re-running on every render
-  // unless 'sales' changes.
-
   const getDailySummary = useMemo(() => (date: Date) => {
-    // Create new Date objects to avoid modifying the original 'date' object
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -90,7 +82,7 @@ export default function Dashboard() {
     endOfDay.setHours(23, 59, 59, 999);
 
     const dailySales = sales.filter(sale => {
-      const saleDate = new Date(sale.recordedAt); // Parse recordedAt string to Date
+      const saleDate = new Date(sale.recordedAt);
       return saleDate >= startOfDay && saleDate <= endOfDay;
     });
 
@@ -99,7 +91,7 @@ export default function Dashboard() {
     let salesCount = 0; // Number of sales transactions for the day
 
     dailySales.forEach(sale => {
-      totalSales += sale.total; // Use the total from the sale object
+      totalSales += sale.total;
       salesCount++;
       sale.items.forEach(item => {
         totalExpenses += item.cost * item.quantity; // Sum individual item costs
