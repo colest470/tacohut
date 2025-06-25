@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	//"context"
+	//"encoding/json"
+	"fmt"
 	"net/http"
-	"context"
-	"time"
-	"encoding/json"
-	"primitive"
+	//"time"
 
-	"tacohut/middlewares"
+	//"tacohut/middlewares"
+
+	"github.com/gorilla/mux"
+	//"go.mongodb.org/mongo-driver/bson"
 )
 
 func DeleteSale(w http.ResponseWriter, r *http.Request) {
@@ -16,28 +19,33 @@ func DeleteSale(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    id := chi.URLParam(r, "id")
-    objectId, err := primitive.ObjectIDFromHex(id)
-    if err != nil {
-        http.Error(w, "Invalid ID", http.StatusBadRequest)
-        return
-    }
+    // id := chi.URLParam(r, "id")
+    // objectId, err := primitive.ObjectIDFromHex(id)
+    // if err != nil {
+    //     http.Error(w, "Invalid ID", http.StatusBadRequest)
+    //     return
+    // }
 
-    collection := middlewares.TacoDB.Collection("dailysales")
-    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-    defer cancel()
+    vars := mux.Vars(r)
+    id := vars["id"]
 
-    result, err := collection.DeleteOne(ctx, bson.M{"_id": objectId})
-    if err != nil {
-        http.Error(w, "Error deleting sale", http.StatusInternalServerError)
-        return
-    }
+    fmt.Println("Attemting to delete sale with id:", id)
 
-    if result.DeletedCount == 0 {
-        http.Error(w, "Sale not found", http.StatusNotFound)
-        return
-    }
+    // collection := middlewares.TacoDB.Collection("dailysales")
+    // ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    // defer cancel()
 
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]string{"status": "success"})
+    // result, err := collection.DeleteOne(ctx, bson.M{"_id": objectId})
+    // if err != nil {
+    //     http.Error(w, "Error deleting sale", http.StatusInternalServerError)
+    //     return
+    // }
+
+    // if result.DeletedCount == 0 {
+    //     http.Error(w, "Sale not found", http.StatusNotFound)
+    //     return
+    // }
+
+    // w.Header().Set("Content-Type", "application/json")
+    // json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 }

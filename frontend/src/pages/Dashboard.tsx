@@ -100,11 +100,6 @@ export default function Dashboard() {
 
     const netProfit = totalSales - totalExpenses;
 
-    // Note: If netProfit is consistently 0, it likely means the 'recordedAt'
-    // timestamps in your MongoDB data are not correctly set to the current date.
-    // Please verify the 'recordedAt' field values in your database for recent sales.
-    // The Go backend is designed to set 'recordedAt' to time.Now() on new insertions.
-
     return {
       totalSales,
       totalExpenses,

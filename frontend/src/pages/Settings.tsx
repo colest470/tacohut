@@ -11,11 +11,16 @@ interface MenuItem {
 }
 
 interface SalesData {
-  _id: string;
+  ID: string;
   items: MenuItem[];
   paymentMethod: string;
   total: number;
   recordedAt: string;
+}
+
+interface FetchSalesResponse {
+  status: string;
+  data: SalesData[];
 }
 
 export default function Settings() {
@@ -27,14 +32,18 @@ export default function Settings() {
   useEffect(() => {
     const fetchSalesData = async () => {
       try {
-        const response = await fetch('http://localhost:8080/api/fetchSaleData');
+        const response = await fetch('http://localhost:8080/');
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data: SalesData[] = await response.json();
-        setSalesData(data);
+        const data: FetchSalesResponse = await response.json();
+
+        if (data.status == "success") {
+          setSalesData(data.data);
+        }
+
         setIsLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -45,8 +54,8 @@ export default function Settings() {
     fetchSalesData();
   }, []);
 
-  // Delete a sales record
   const handleDelete = async (id: string) => {
+    console.log("ID to be deleted is", id);
     try {
       const response = await fetch(`http://localhost:8080/api/sales/${id}`, {
         method: 'DELETE',
@@ -56,7 +65,7 @@ export default function Settings() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setSalesData(salesData.filter(sale => sale._id !== id));
+      setSalesData(salesData.filter(sale => sale.ID !== id));
     } catch (err: any) {
       setError(err.message);
     }
@@ -130,7 +139,7 @@ export default function Settings() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {salesData.map((sale) => (
-                  <tr key={sale._id} className="hover:bg-gray-50">
+                  <tr key={sale.ID} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(sale.recordedAt)}
                     </td>
@@ -140,7 +149,7 @@ export default function Settings() {
                           <div key={item.menuItemId} className="flex items-center space-x-2 mb-1">
                             <span className="font-medium">{item.name}</span>
                             <span className="text-gray-500">x{item.quantity}</span>
-                            <span className="text-orange-600">${(item.price / 100).toFixed(2)}</span>
+                            <span className="text-orange-600">ksh{item.price}</span>
                           </div>
                         ))}
                       </div>
@@ -152,11 +161,11 @@ export default function Settings() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${(sale.total / 100).toFixed(2)}
+                      ksh{sale.total}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => handleDelete(sale._id)}
+                        onClick={() => handleDelete(sale.ID)}
                         className="text-red-600 hover:text-red-900 flex items-center space-x-1"
                       >
                         <Trash2 className="h-4 w-4" />
