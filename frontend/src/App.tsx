@@ -10,22 +10,22 @@ import { SalesProvider } from './context/SalesContext'
 import { useEffect } from 'react'
 
 function App() {
-  useEffect(() => {
-    const handleUnload = async () => {
-      const data = { action: "App closed", time: new Date().toISOString() }
+  // useEffect(() => {
+  //   const handleUnload = async () => {
+  //     const data = { action: "App closed", time: new Date().toISOString() }
 
-      navigator.sendBeacon(
-        "http://localhost:8080/close", 
-        JSON.stringify(data)
-      ); // beacon reliable on close
-    } 
+  //     navigator.sendBeacon(
+  //       "http://localhost:8080/close", 
+  //       JSON.stringify(data)
+  //     ); // beacon reliable on close
+  //   } 
 
-    window.addEventListener("beforeunload", handleUnload);
+  //   window.addEventListener("beforeunload", handleUnload);
 
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-    } 
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("beforeunload", handleUnload);
+  //   } 
+  // }, []);
 
   return (
     <SalesProvider>

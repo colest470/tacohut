@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	
+
 	"tacohut/handlers"
 	"tacohut/middlewares"
 
@@ -33,13 +33,14 @@ func main() {
 	mux.HandleFunc("/api/fetchSaleData", handlers.FetchSaleData)
 	mux.HandleFunc("/api/expenseData", handlers.HandleExpense)
 	mux.HandleFunc("/close", handlers.HandleClose)
-	mux.HandleFunc("/api/sales/{id}", handlers.DeleteSale) 
+	mux.HandleFunc("/api/sales/{id}", handlers.DeleteSale)
+	mux.HandleFunc("/api/fetchExpense", handlers.FetchExpenses)
 
 	handlerWithDB := middlewares.ConnectDb(mux)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", ""},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: false,
 		Debug:            false,
@@ -52,4 +53,3 @@ func main() {
 		log.Fatal("Error creating server", err)
 	}
 }
-

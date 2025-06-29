@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Plus, TrendingDown, ShoppingCart, Wrench, Zap, DollarSign } from 'lucide-react'
 import { useSales } from '../context/SalesContext'
 import { format } from 'date-fns'
@@ -20,14 +20,35 @@ const categoryColors = {
 }
 
 export default function Expenses() {
-  const { expenses, addExpense } = useSales()
-  const [showAddForm, setShowAddForm] = useState(false)
+  const { expenses, addExpense } = useSales();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
     category: 'ingredients' as const,
     paymentMethod: "cash",
-  })
+  });
+
+    useEffect(() => {
+    (async () => {
+      try {
+      const request = await fetch("http://localhost:8080/api/fetchExpense");
+
+      if (!request.ok) {
+        setError("Error fetching expenses data!");
+        throw new Error("Error fetching expenses data!");
+      }
+
+      const data = await request.json();
+
+      console.log(data);
+      
+      } catch (error) {
+        console.error(error);
+      }
+    })();
+  }, []);
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0)
   const categoryTotals = expenses.reduce((acc, expense) => {
@@ -47,7 +68,7 @@ export default function Expenses() {
     //   ...(formData.paymentMethod === 'mpesa' && { mpesaCode: formData.mpesaCode })
     // })
 
-    console.log(formData);
+    // console.log(formData);
 
     const request = await fetch("http://localhost:8080/api/expenseData", {
       method: "POST",

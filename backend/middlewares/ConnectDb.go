@@ -22,50 +22,53 @@ var (
 )
 
 func ConnectDb(next http.Handler) http.Handler {
-	var initOnce sync.Mutex
+	// var initOnce sync.Mutex
+	var doOnce sync.Once
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/close" && r.Method == "POST" {
 			return 
 		}
 
-		fmt.Println("Connecting to database...")
+		// initOnce.Lock()
+		// defer initOnce.Unlock()
 
-		initOnce.Lock()
-		defer initOnce.Unlock()
-
-		if err := godotenv.Load(); err != nil {
+		doOnce.Do(func() {
+			fmt.Println("Connecting to database...")
+			
+			if err := godotenv.Load(); err != nil {
 			log.Fatalf("Error loading .env file!")
 			CloseDB()
 			return
-		}
+			}
 
-		dbURI := os.Getenv("DB_URI")
+			dbURI := os.Getenv("DB_URI")
 
-		clientOptions := options.Client().ApplyURI(dbURI)
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+			clientOptions := options.Client().ApplyURI(dbURI)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
 
-		client, err := mongo.Connect(ctx, clientOptions)
-		if err != nil {
-			log.Fatalf("Failed to connect to MongoDB: %v", err) // this is an error
-			CloseDB()
-			return
-		}
+			client, err := mongo.Connect(ctx, clientOptions)
+			if err != nil {
+				log.Fatalf("Failed to connect to MongoDB: %v", err)
+				CloseDB()
+				return
+			}
 
-		err = client.Ping(ctx, nil)
-		if err != nil {
-			log.Fatalf("Failed to ping MongoDB: %v", err)
-			CloseDB()
-			return
-		}
-		fmt.Println("Connected to MongoDB successfully!")
-		MongoClient = client
-		
-		TacoDB = MongoClient.Database("tacohut")
-		ExpensesDB = MongoClient.Database("expenses")
-		DailyAnalytics = MongoClient.Database("dailyExpenses")
+			err = client.Ping(ctx, nil)
+			if err != nil {
+				log.Fatalf("Failed to ping MongoDB: %v", err)
+				CloseDB()
+				return
+			}
+			fmt.Println("Connected to MongoDB successfully!")
+			MongoClient = client
+			
+			TacoDB = MongoClient.Database("tacohut")
+			ExpensesDB = MongoClient.Database("expenses")
+			DailyAnalytics = MongoClient.Database("dailyExpenses")
 
-		fmt.Println("Connected to databases:", TacoDB.Name(), ExpensesDB.Name(), DailyAnalytics.Name())
+			fmt.Println("Connected to databases:", TacoDB.Name(),", ", ExpensesDB.Name(),", ", DailyAnalytics.Name())
+		})
 
 		next.ServeHTTP(w, r)
 	})
