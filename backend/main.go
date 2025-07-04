@@ -35,6 +35,7 @@ func main() {
 	mux.HandleFunc("/close", handlers.HandleClose)
 	mux.HandleFunc("/api/sales/{id}", handlers.DeleteSale)
 	mux.HandleFunc("/api/fetchExpense", handlers.FetchExpenses)
+	mux.HandleFunc("/api/expenses/{id}", handlers.DeleteExpenses)
 
 	handlerWithDB := middlewares.ConnectDb(mux)
 

@@ -19,6 +19,14 @@ const categoryColors = {
   other: 'text-gray-600 bg-gray-100'
 }
 
+interface expensesFetched {
+  amount: string,
+  category: string,
+  description: string,
+  paymentMethod: string,
+  timeAdded: Date,
+}
+
 export default function Expenses() {
   const { expenses, addExpense } = useSales();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -42,7 +50,7 @@ export default function Expenses() {
 
       const data = await request.json();
 
-      console.log(data);
+      const dataFetched: expensesFetched = data.data
       
       } catch (error) {
         console.error(error);
@@ -70,21 +78,30 @@ export default function Expenses() {
 
     // console.log(formData);
 
-    const request = await fetch("http://localhost:8080/api/expenseData", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(formData)
-    })
+    try {
+      const request = await fetch("http://localhost:8080/api/expenseData", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
 
-    setFormData({
-      description: '',
-      amount: '',
-      category: 'ingredients',
-      paymentMethod: 'cash',
-    })
-    setShowAddForm(false)
+      if (!request.ok) {
+        setError("posting expense data!");
+        throw new Error("Error posting expense data!");
+      }
+
+      setFormData({
+        description: '',
+        amount: '',
+        category: 'ingredients',
+        paymentMethod: 'cash',
+      })
+      setShowAddForm(false)
+    } catch (error) {
+      console.error("Check your connectivity!", error);
+    }
   }
 
   return (

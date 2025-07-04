@@ -29,9 +29,6 @@ func ConnectDb(next http.Handler) http.Handler {
 			return 
 		}
 
-		// initOnce.Lock()
-		// defer initOnce.Unlock()
-
 		doOnce.Do(func() {
 			fmt.Println("Connecting to database...")
 			

@@ -15,6 +15,7 @@ type Expenses struct {
 	Category string      `json:"category" bson:"category"`
 	Description string   `json:"description" bson:"description"`
 	PaymentMethod string `json:"paymentMethod" bson:"paymentMethod"`
+	TimeAdded time.Time  `json:"timeAdded" bson:"timeAdded"`
 }
 
 func HandleExpense(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,8 @@ func HandleExpense(w http.ResponseWriter, r *http.Request) {
         http.Error(w, "Bad request: "+ err.Error(), http.StatusBadRequest)
         return
     }
+
+	expenses.TimeAdded = time.Now()
 
 	fmt.Println("Received:", expenses)
 
@@ -59,4 +62,6 @@ func HandleExpense(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+
+	expenses.CalculateDailyExpenses(w, r)
 }

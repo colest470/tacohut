@@ -1,21 +1,27 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	//"fmt"
-	"log"
-	"encoding/json"
-	"time"
 	"context"
+	"encoding/json"
+	"log"
+	"time"
 
 	"tacohut/middlewares"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ExpensesFetched struct {
+	ID interface{}       `bson:"_id,omitempty"`
 	Amount string        `json:"amount" bson:"amount"`
 	Category string      `json:"category" bson:"category"`
 	Description string   `json:"description" bson:"description"`
 	PaymentMethod string `json:"paymentMethod" bson:"paymentMethod"`
+	TimeAdded time.Time  `json:"timeAdded" bson:"timeAdded"`
 }
 
 func FetchExpenses(w http.ResponseWriter, r *http.Request) {
@@ -24,14 +30,16 @@ func FetchExpenses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if middlewares.TacoDB == nil {
+	fmt.Println("Expenses fetched!")
+
+	if middlewares.ExpensesDB == nil {
 		log.Println("Database connection is nil")
 		http.Error(w, "Database connection error", http.StatusInternalServerError)
 		return
 	}
 	
 	
-	collection := middlewares.TacoDB.Collection("dailysales")
+	collection := middlewares.ExpensesDB.Collection("dailyExpense")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -58,8 +66,8 @@ func FetchExpenses(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
-	var salesItems []Sales
-	if err = cursor.All(ctx, &salesItems); err != nil {
+	var expenses []ExpensesFetched
+	if err = cursor.All(ctx, &expenses); err != nil {
 		log.Printf("Error decoding portfolio items: %v", err)
 		http.Error(w, "Failed to decode portfolio items", http.StatusInternalServerError)
 		return
@@ -67,9 +75,10 @@ func FetchExpenses(w http.ResponseWriter, r *http.Request) {
 
 	response := map[string]interface{}{
 		"status": "success",
-		"data": salesItems,
+		"data": expenses,
 	}
 	w.Header().Set("Content-Type", "application/json")
+
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("Error encoding response: %v", err)
 		http.Error(w, "Internal server error: Could not encode response", http.StatusInternalServerError)
