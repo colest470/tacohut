@@ -54,6 +54,4 @@ response := map[string]interface{}{
 
 w.Header().Set("Content-Type", "application/json")
 json.NewEncoder(w).Encode(response)
-
-sa
 }

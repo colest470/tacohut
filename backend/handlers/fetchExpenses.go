@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	//"fmt"
 	"context"
@@ -29,8 +28,6 @@ func FetchExpenses(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-	fmt.Println("Expenses fetched!")
 
 	if middlewares.ExpensesDB == nil {
 		log.Println("Database connection is nil")

@@ -2,11 +2,29 @@ import { TrendingUp, Calendar, Star, Target } from 'lucide-react'
 import { useSales } from '../context/SalesContext'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { useEffect, useState } from 'react'
 
-// const COLORS = ['#ea580c', '#f97316', '#fb923c', '#fdba74', '#fed7aa']
+interface DailyAnalytics {
+    id: string;
+    date: string; // ISO format
+    itemsSold: Record<string, number>;
+    paymentMethods: Record<string, number>;
+    totalSales: number;
+    totalExpenses: number;
+    netProfit: number;
+    expenseCategories: Record<string, number>;
+    lastUpdated: string; // ISO format
+}
 
+interface ApiResponse {
+    status: string;
+    data: DailyAnalytics[];
+    count: number;
+}
 export default function Analytics() {
-  const { sales, expenses, getWeeklyAnalysis, getDailySummary } = useSales()
+  const { sales, expenses, getWeeklyAnalysis, getDailySummary } = useSales();
+  const [error, setError] = useState<string|null>(null); // create a ui error message
+  const [analytics, setAnalytics] = useState<DailyAnalytics[]>([]);
 
   const today = new Date()
   const weeklyAnalysis = getWeeklyAnalysis(today)
@@ -42,7 +60,27 @@ export default function Analytics() {
   const expenseData = Object.entries(categoryExpenses).map(([category, amount]) => ({
     category: category.charAt(0).toUpperCase() + category.slice(1),
     amount
-  }))
+  }));
+
+  useEffect(() => {
+    (async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/daily");
+      
+      if (!response.ok) {
+        setError("connection error");
+        throw new Error("Error fetching the daily data!");
+      }
+
+      const data: ApiResponse = await response.json();
+      setAnalytics(data.data);
+      
+      console.log(analytics);
+    } catch (error) {
+      console.error(error);
+    }
+    })();
+  }, [])
 
   return (
     <div className="space-y-6">

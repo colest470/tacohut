@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
-	"errors"
+	"strconv"
 
 	"tacohut/middlewares"
 
@@ -13,50 +16,32 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// type MenuItem struct {
-// 	MenuItemId string    `json:"menuItemId" bson:"menuItemId"`
-// 	Name       string    `json:"name" bson:"name"`
-// 	Quantity   int       `json:"quantity" bson:"quantity"`
-// 	Price      int       `json:"price" bson:"price"`
-// 	Cost       int       `json:"cost" bson:"cost"`
-// 	Time       time.Time `json:"time" bson:"time"`
-// }
-
-// type SalesData struct {
-// 	ID            interface{} `bson:"_id,omitempty"`
-// 	Items         []MenuItem  `json:"items" bson:"items"`
-// 	PaymentMethod string      `json:"paymentMethod" bson:"paymentMethod"`
-// 	Total         int         `json:"total" bson:"total"`
-// 	RecordedAt    time.Time   `json:"recordedAt" bson:"recordedAt"`
-// }
-
-// type Expenses struct {
-// 	ID            interface{} `bson:"_id,omitempty"`
-// 	Amount        int         `json:"amount" bson:"amount"`
-// 	Category      string      `json:"category" bson:"category"`
-// 	Description   string      `json:"description" bson:"description"`
-// 	PaymentMethod string      `json:"paymentMethod" bson:"paymentMethod"`
-// 	TimeAdded     time.Time   `json:"timeAdded" bson:"timeAdded"`
-// }
-
 type DailyData struct {
-	ID interface{}                 `bson:"_id,omitempty"`
-	Date time.Time                 `bson:"date"`
-	ItemsSold map[string]int       `bson:"itemsSold"`
-	PaymentSummary map[string]int  `bson:"paymentSummary"`
-	TotalSales int                 `bson:"totalSales"`
-	TotalExpenses int              `bson:"totalExpenses"`
-	NetProfit  int                 `bson:"netProfit"`
-	ExpenseCategory map[string]int `bson:"expenseCategory"`
-	LastUpdated time.Time          `bson:"lastUpdated"`
+	ID             interface{}        `bson:"_id,omitempty"`
+	Date           time.Time          `bson:"date"`
+	ItemsSold      map[string]int     `bson:"itemsSold"`
+	PaymentSummary map[string]int     `bson:"paymentSummary"`
+	TotalSales     int                `bson:"totalSales"`
+	TotalExpenses  int                `bson:"totalExpenses"`
+	NetProfit      int                `bson:"netProfit"`
+	ExpenseCategory map[string]int    `bson:"expenseCategory"`
+	LastUpdated    time.Time          `bson:"lastUpdated"`
 }
 
 func (randomSales SalesData) CalculateDailySales(w http.ResponseWriter, r *http.Request) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Increased timeout
 	defer cancel()
 
 	currentDate := time.Now().Truncate(24 * time.Hour)
 
+	if middlewares.DailyAnalytics == nil {
+		return respondWithError(w, http.StatusInternalServerError, "database connection error")
+	}
+
+	collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
+	filter := bson.M{"date": currentDate}
+
+	// Build update operation
 	update := bson.M{
 		"$inc": bson.M{
 			"totalSales": randomSales.Total,
@@ -65,74 +50,91 @@ func (randomSales SalesData) CalculateDailySales(w http.ResponseWriter, r *http.
 			"lastUpdated": time.Now(),
 		},
 		"$setOnInsert": bson.M{
-			"date": currentDate,
+			"date":            currentDate,
+			"itemsSold":       make(map[string]int),
+			"paymentSummary":  make(map[string]int),
+			"totalExpenses":   0,
+			"netProfit":       0,
+			"expenseCategory": make(map[string]int),
 		},
 	}
 
+	// Add items sold updates
 	itemsUpdate := bson.M{}
 	for _, item := range randomSales.Items {
 		itemsUpdate["itemsSold."+item.Name] = item.Quantity
 	}
 	update["$inc"].(bson.M)["itemsSold"] = itemsUpdate
 
+	// Add payment method update
 	update["$inc"].(bson.M)["paymentSummary."+randomSales.PaymentMethod] = 1
 
-	collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
-	filter := bson.M{"date": currentDate}
-	_, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return errors.New("Error entering daily sales data!")
+	// Execute upsert operation
+	if _, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true)); err != nil {
+		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error updating daily sales: %v", err))
 	}
 
-	err = recalculateDailyProfit(middlewares.DailyAnalytics, currentDate)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return errors.New("Error entering daily sales Data!")
+	// Recalculate profit
+	if err := recalculateDailyProfit(middlewares.DailyAnalytics, currentDate); err != nil {
+		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error recalculating profit: %v", err))
 	}
-	return nil
+
+	return respondWithSuccess(w, "daily sales updated successfully")
 }
 
 func (randomExpenses Expenses) CalculateDailyExpenses(w http.ResponseWriter, r *http.Request) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	currentDate := time.Now().Truncate(24 * time.Hour)
 
+	if middlewares.DailyAnalytics == nil {
+		return respondWithError(w, http.StatusInternalServerError, "database connection error")
+	}
+
+	collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
+	filter := bson.M{"date": currentDate}
+
 	update := bson.M{
 		"$inc": bson.M{
-			"totalExpenses": randomExpenses.Amount,
+			"totalExpenses":              randomExpenses.Amount,
 			"expenseCategory." + randomExpenses.Category: randomExpenses.Amount,
 		},
 		"$set": bson.M{
 			"lastUpdated": time.Now(),
 		},
 		"$setOnInsert": bson.M{
-			"date": currentDate,
+			"date":           currentDate,
+			"itemsSold":      make(map[string]int),
+			"paymentSummary": make(map[string]int),
+			"totalSales":     0,
+			"netProfit":      0,
 		},
 	}
 
-	collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
-	filter := bson.M{"date": currentDate}
-	_, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return errors.New("Error updatin daily data!")
+	if _, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true)); err != nil {
+		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error updating daily expenses: %v", err))
 	}
 
-	err = recalculateDailyProfit(middlewares.DailyAnalytics, currentDate)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return errors.New("Error updatin daily data!")
+	if err := recalculateDailyProfit(middlewares.DailyAnalytics, currentDate); err != nil {
+		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error recalculating profit: %v", err))
 	}
-	return nil
+
+	return respondWithSuccess(w, "daily expenses updated successfully")
 }
 
 func (randomSales SalesData) CalculateDailySalesDeleted(w http.ResponseWriter, r *http.Request) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	saleDate := randomSales.RecordedAt.Truncate(24 * time.Hour)
+
+	if middlewares.DailyAnalytics == nil {
+		return respondWithError(w, http.StatusInternalServerError, "database connection error")
+	}
+
+	collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
+	filter := bson.M{"date": saleDate}
 
 	update := bson.M{
 		"$inc": bson.M{
@@ -151,69 +153,70 @@ func (randomSales SalesData) CalculateDailySalesDeleted(w http.ResponseWriter, r
 
 	update["$inc"].(bson.M)["paymentSummary."+randomSales.PaymentMethod] = -1
 
-	collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
-	filter := bson.M{"date": saleDate}
-	_, err := collection.UpdateOne(ctx, filter, update)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return errors.New("Error updatin daily data!")
+	if _, err := collection.UpdateOne(ctx, filter, update); err != nil {
+		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error updating deleted sales: %v", err))
 	}
 
-	err = recalculateDailyProfit(middlewares.DailyAnalytics, saleDate)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return errors.New("Error updatin daily data!")
+	if err := recalculateDailyProfit(middlewares.DailyAnalytics, saleDate); err != nil {
+		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error recalculating profit: %v", err))
 	}
 
-	return nil
+	return respondWithSuccess(w, "deleted sales updated successfully")
 }
 
 func (randomExpenses Expenses) CalculateDailyExpensesDeleted(w http.ResponseWriter, r *http.Request) error {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
+    ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+    defer cancel()
 
-		// Get the date from the deleted expense
-		expenseDate := randomExpenses.TimeAdded.Truncate(24 * time.Hour)
+    expenseDate := randomExpenses.TimeAdded.Truncate(24 * time.Hour)
 
-		// Prepare update operations
-		update := bson.M{
-			"$inc": bson.M{
-				"totalExpenses": -randomExpenses.Amount,
-				"expenseCategory." + randomExpenses.Category: -randomExpenses.Amount,
-			},
-			"$set": bson.M{
-				"lastUpdated": time.Now(),
-			},
-		}
+    if middlewares.DailyAnalytics == nil {
+        return respondWithError(w, http.StatusInternalServerError, "database connection error")
+    }
 
-		// Update the daily data
-		collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
-		filter := bson.M{"date": expenseDate}
-		_, err := collection.UpdateOne(ctx, filter, update)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return errors.New("Error updatin daily data!")
-		}
+    // Convert string amount to integer
+    amount, err := strconv.Atoi(randomExpenses.Amount)
+    if err != nil {
+        return respondWithError(w, http.StatusBadRequest, "invalid expense amount format")
+    }
 
-		err = recalculateDailyProfit(middlewares.DailyAnalytics, expenseDate)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return errors.New("Error updatin daily data!")
-		}
-		return  nil
+    collection := middlewares.DailyAnalytics.Collection("dailyAnalysis")
+    filter := bson.M{"date": expenseDate}
+
+    update := bson.M{
+        "$inc": bson.M{
+            "totalExpenses": -amount, // Now using the converted integer value
+        },
+        "$set": bson.M{
+            "lastUpdated": time.Now(),
+        },
+    }
+
+    if randomExpenses.Category != "" {
+        update["$inc"].(bson.M)["expenseCategory."+randomExpenses.Category] = -amount
+    }
+
+    if _, err := collection.UpdateOne(ctx, filter, update); err != nil {
+        return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error updating deleted expenses: %v", err))
+    }
+
+    if err := recalculateDailyProfit(middlewares.DailyAnalytics, expenseDate); err != nil {
+        return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error recalculating profit: %v", err))
+    }
+
+    return respondWithSuccess(w, "deleted expenses updated successfully")
 }
 
 func recalculateDailyProfit(db *mongo.Database, date time.Time) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	collection := db.Collection("dailyAnalysis")
 	filter := bson.M{"date": date}
 
 	var dailyData DailyData
-	err := collection.FindOne(ctx, filter).Decode(&dailyData)
-	if err != nil {
-		return err
+	if err := collection.FindOne(ctx, filter).Decode(&dailyData); err != nil {
+		return fmt.Errorf("error finding daily data: %v", err)
 	}
 
 	netProfit := dailyData.TotalSales - dailyData.TotalExpenses
@@ -225,6 +228,24 @@ func recalculateDailyProfit(db *mongo.Database, date time.Time) error {
 		},
 	}
 
-	_, err = collection.UpdateOne(ctx, filter, update)
-	return err
+	if _, err := collection.UpdateOne(ctx, filter, update); err != nil {
+		return fmt.Errorf("error updating profit: %v", err)
+	}
+
+	return nil
+}
+
+// Helper functions for consistent responses
+func respondWithError(w http.ResponseWriter, code int, message string) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+	return errors.New(message)
+}
+
+func respondWithSuccess(w http.ResponseWriter, message string) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": message})
+	return nil
 }
