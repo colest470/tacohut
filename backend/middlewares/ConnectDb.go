@@ -19,9 +19,9 @@ var (
 	TacoDB *mongo.Database
 	ExpensesDB *mongo.Database
 	DailyAnalytics *mongo.Database
-	// weeklyAnalytics *mongo.Database
-	// monthlyAnalytics *mongo.Database
-	// yearlyAnalytics *mongo.Database
+	WeeklyAnalytics *mongo.Database
+	MonthlyAnalytics *mongo.Database
+	YearlyAnalytics *mongo.Database
 )
 
 func ConnectDb(next http.Handler) http.Handler {
@@ -66,8 +66,11 @@ func ConnectDb(next http.Handler) http.Handler {
 			TacoDB = MongoClient.Database("tacohut")
 			ExpensesDB = MongoClient.Database("expenses")
 			DailyAnalytics = MongoClient.Database("dailyExpenses")
+			WeeklyAnalytics = MongoClient.Database("weeklyAnalytics")
+			MonthlyAnalytics = MongoClient.Database("monthlyAnalytics")
+			YearlyAnalytics = MongoClient.Database("yearlyAnalytics")
 
-			fmt.Println("Connected to databases:", TacoDB.Name(),", ", ExpensesDB.Name(),", ", DailyAnalytics.Name())
+			fmt.Println("Connected to databases:", TacoDB.Name(),", ", ExpensesDB.Name(),", ", DailyAnalytics.Name(), ", ", WeeklyAnalytics.Name(), ", ", MonthlyAnalytics.Name(), ", ", YearlyAnalytics.Name())
 		})
 
 		next.ServeHTTP(w, r)

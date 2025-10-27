@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type DailyData struct {
+type DailyData struct { // can also be the struct for weekly, monthly and yearly
 	ID             interface{}        `bson:"_id,omitempty"`
 	Date           time.Time          `bson:"date"`
 	ItemsSold      map[string]int     `bson:"itemsSold"`
@@ -231,7 +231,6 @@ func recalculateDailyProfit(db *mongo.Database, date time.Time) error {
 	return nil
 }
 
-// Helper functions for consistent responses
 func respondWithError(w http.ResponseWriter, code int, message string) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)

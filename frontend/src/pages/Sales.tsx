@@ -19,35 +19,96 @@ import {
   BarChart,
   Bar,
 } from "recharts";
-import { Sale } from "../types";
 
-interface Sales {
-  sale: Sale[]
+// Define the interface for the API response data
+interface ApiSaleItem {
+  menuItemId: string;
+  name: string;
+  quantity: number;
+  price: number;
+  cost: number;
+  time?: string;
+}
 
+interface ApiSale {
+  ID: string;
+  items: ApiSaleItem[];
+  paymentMethod: string;
+  recordedAt: string;
+  total: number;
+}
+
+interface ApiResponse {
+  data: ApiSale[];
+  status: string;
+}
+
+// Interface for transformed sale data
+interface TransformedSale {
+  id: string;
+  items: Array<{
+    menuItemId: string;
+    name: string;
+    quantity: number;
+    price: number;
+    cost: number;
+  }>;
+  paymentMethod: string;
+  timestamp: string;
+  total: number;
+  mpesaCode?: string;
+  customerPhone?: string;
 }
 
 export default function Sales() {
-  // const { sales, menuItems } = useSales();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPayment, setFilterPayment] = useState<"all" | "mpesa" | "cash">("all");
-  const [sales, setSales] = useState<Sales[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sales, setLocalSales] = useState<TransformedSale[]>([]);
 
   useEffect(() => {
-    (async () => {
+    const fetchSalesData = async () => {
       try {
+        setLoading(true);
         const response = await fetch("http://localhost:8080/api/fetchSaleData");
 
         if (!response.ok) {
           throw new Error("Error getting the sales data!");
         }
 
-        let data = await response.json();
+        const apiResponse: ApiResponse = await response.json();
+        console.log("Fetched sales data:", apiResponse);
 
-        console.log(data);
+        if (apiResponse.status === "success" && apiResponse.data) {
+          // Transform API data to match your component format
+          const transformedSales: TransformedSale[] = apiResponse.data.map((apiSale: ApiSale) => ({
+            id: apiSale.ID,
+            items: apiSale.items.map(item => ({
+              menuItemId: item.menuItemId,
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              cost: item.cost
+            })),
+            paymentMethod: apiSale.paymentMethod,
+            timestamp: apiSale.recordedAt,
+            total: apiSale.total,
+            mpesaCode: apiSale.paymentMethod === "mpesa" ? `MP${apiSale.ID.slice(-6)}` : undefined,
+            customerPhone: apiSale.paymentMethod === "mpesa" ? "+2547XXXXXX" : undefined
+          }));
+
+          setLocalSales(transformedSales);
+        }
       } catch (error) {
         console.error("Check internet connectivity!", error);
+        setError("Failed to fetch sales data. Please check your connection.");
+      } finally {
+        setLoading(false);
       }
-    })();
+    };
+
+    fetchSalesData();
   }, []);
 
   const filteredSales = sales.filter((sale) => {
@@ -88,28 +149,40 @@ export default function Sales() {
       new Date(b.date + ", 2024").getTime()
   );
 
-  // Best selling items
+  // Best selling items - extract from sales data since we don't have menuItems context
   const itemSales = sales.flatMap((sale) => sale.items);
-  const itemStats = menuItems
-    .map((item) => {
-      const soldItems = itemSales.filter(
-        (saleItem) => saleItem.menuItemId === item.id
-      );
-      const totalQuantity = soldItems.reduce(
-        (sum, saleItem) => sum + saleItem.quantity,
-        0
-      );
-      const totalRevenue = soldItems.reduce(
-        (sum, saleItem) => sum + saleItem.quantity * saleItem.price,
-        0
-      );
-      return {
-        name: item.name,
-        quantity: totalQuantity,
-        revenue: totalRevenue,
-      };
-    })
-    .sort((a, b) => b.revenue - a.revenue);
+  const itemStatsMap = new Map();
+  
+  itemSales.forEach((item) => {
+    const existing = itemStatsMap.get(item.name) || { 
+      name: item.name, 
+      quantity: 0, 
+      revenue: 0 
+    };
+    itemStatsMap.set(item.name, {
+      name: item.name,
+      quantity: existing.quantity + item.quantity,
+      revenue: existing.revenue + (item.quantity * item.price)
+    });
+  });
+
+  const itemStats = Array.from(itemStatsMap.values()).sort((a, b) => b.revenue - a.revenue);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-gray-600">Loading sales data...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-lg text-red-600">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -289,8 +362,8 @@ export default function Sales() {
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
                       {sale.items.map((item) => (
-                        <div key={item.menuItemId}>
-                          {item.quantity}x {item.name}
+                        <div key={`${sale.id}-${item.menuItemId}`}>
+                          {item.quantity}x {item.name} - KES {item.price}
                         </div>
                       ))}
                     </div>
