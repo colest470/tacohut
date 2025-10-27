@@ -19,6 +19,9 @@ var (
 	TacoDB *mongo.Database
 	ExpensesDB *mongo.Database
 	DailyAnalytics *mongo.Database
+	// weeklyAnalytics *mongo.Database
+	// monthlyAnalytics *mongo.Database
+	// yearlyAnalytics *mongo.Database
 )
 
 func ConnectDb(next http.Handler) http.Handler {

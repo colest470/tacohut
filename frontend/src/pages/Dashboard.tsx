@@ -29,7 +29,6 @@ interface SalesData {
   recordedAt: string;
 }
 
-// Interface for the overall API response
 interface FetchSalesResponse {
   status: string;
   data: SalesData[];
@@ -54,9 +53,10 @@ export default function Dashboard() {
         }
 
         const result: FetchSalesResponse = await response.json();
+        console.log("API response:", result);
 
         if (result.status === "success") {
-          setSales(result.data);
+          setSales(result.data || []);
           console.log("Fetched sales data:", result.data);
         } else {
           throw new Error(`API returned non-success status: ${result.status}`);
@@ -70,6 +70,24 @@ export default function Dashboard() {
     };
 
     fetchSalesData();
+  }, []);
+
+  useEffect(() => {
+    const fetchDailyData = async () => {
+      try {
+        const response: any = await fetch("http://localhost:8080/api/daily");
+
+        if (!response.ok) {
+          throw new Error("Error fetching daily data!");
+        }
+
+        console.log(await response.json().data);
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      }
+    }
+
+    fetchDailyData();
   }, []);
 
   const today = new Date();
@@ -94,7 +112,7 @@ export default function Dashboard() {
       totalSales += sale.total;
       salesCount++;
       sale.items.forEach(item => {
-        totalExpenses += item.cost * item.quantity; // Sum individual item costs
+        totalExpenses += item.cost * item.quantity; 
       });
     });
 
@@ -105,7 +123,7 @@ export default function Dashboard() {
       totalExpenses,
       netProfit,
       salesCount,
-      dailySales, // Optionally return the filtered sales for further use
+      dailySales, 
     };
   }, [sales]);
 
@@ -129,10 +147,10 @@ export default function Dashboard() {
   const getMostProductiveDay = useMemo(() => () => {
     if (sales.length === 0) return "N/A";
 
-    const dailySalesMap: { [key: string]: number } = {}; // Date string -> total sales for that day
+    const dailySalesMap: { [key: string]: number } = {}; 
 
     sales.forEach(sale => {
-      const dateKey = format(new Date(sale.recordedAt), 'yyyy-MM-dd'); // Use recordedAt
+      const dateKey = format(new Date(sale.recordedAt), 'yyyy-MM-dd'); 
       dailySalesMap[dateKey] = (dailySalesMap[dateKey] || 0) + sale.total;
     });
 
@@ -142,7 +160,7 @@ export default function Dashboard() {
     for (const dateKey in dailySalesMap) {
       if (dailySalesMap[dateKey] > maxSales) {
         maxSales = dailySalesMap[dateKey];
-        bestDay = format(new Date(dateKey), 'MMM dd, yyyy'); // Format for display
+        bestDay = format(new Date(dateKey), 'MMM dd, yyyy');
       }
     }
     return bestDay;
@@ -150,9 +168,8 @@ export default function Dashboard() {
 
   const mostProductiveDay = getMostProductiveDay();
 
-  // Recent sales (last 5) - using the actual 'sales' state
   const recentSales = sales
-    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()) // Sort by most recent
+    .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()) 
     .slice(0, 5);
 
   // Payment method breakdown
@@ -303,7 +320,7 @@ export default function Dashboard() {
               <div className="text-center py-6 text-gray-500">
                 <ShoppingCart className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                 <p>No sales data available.</p>
-                <p className="text-sm">Make sure you've added some sales via the backend.</p>
+                <p className="text-sm">Make sure you've added some sales.</p>
               </div>
             )}
           </div>

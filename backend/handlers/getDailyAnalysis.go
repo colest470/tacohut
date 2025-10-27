@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 
 	"tacohut/middlewares"
-
 	
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,14 +16,14 @@ import (
 
 type DailyAnalyticsResponse struct {
     ID           string            `json:"id"`
-    Date         string            `json:"date"` // ISO format string
+    Date         string            `json:"date"` 
     ItemsSold    map[string]int    `json:"itemsSold"`
     PaymentMethods map[string]int  `json:"paymentMethods"`
     TotalSales   int               `json:"totalSales"`
     TotalExpenses int              `json:"totalExpenses"`
     NetProfit    int               `json:"netProfit"`
     ExpenseCategories map[string]int `json:"expenseCategories"`
-    LastUpdated  string            `json:"lastUpdated"` // ISO format string
+    LastUpdated  string            `json:"lastUpdated"` 
 }
 
 func FetchDailyAnalysis(w http.ResponseWriter, r *http.Request) {

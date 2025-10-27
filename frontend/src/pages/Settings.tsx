@@ -55,7 +55,7 @@ export default function Settings() {
         const data: FetchSalesResponse = await response.json();
 
         if (data.status == "success") {
-          setSalesData(data.data);
+          setSalesData(data.data || []);
         }
 
         setIsLoading(false);
@@ -120,7 +120,7 @@ export default function Settings() {
         throw new Error(`Error deleting expense with id:${id}`);
       }
 
-      setSalesData(salesData.filter(sale => sale.ID !== id));
+      setSalesData(salesData?.filter(sale => sale.ID !== id));
     } catch (error) {
       console.error(error);
     }
@@ -193,7 +193,7 @@ export default function Settings() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {salesData.map((sale) => (
+                {salesData?.map((sale) => (
                   <tr key={sale.ID} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatDate(sale.recordedAt)}
@@ -285,7 +285,7 @@ export default function Settings() {
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {expensesData.map((expense) => (
+          {expensesData?.map((expense) => (
             <tr key={expense.ID} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {formatDate(expense.recordedAt)}

@@ -29,7 +29,7 @@ type DailyData struct {
 }
 
 func (randomSales SalesData) CalculateDailySales(w http.ResponseWriter, r *http.Request) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // Increased timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	currentDate := time.Now().Truncate(24 * time.Hour)
@@ -59,22 +59,18 @@ func (randomSales SalesData) CalculateDailySales(w http.ResponseWriter, r *http.
 		},
 	}
 
-	// Add items sold updates
 	itemsUpdate := bson.M{}
 	for _, item := range randomSales.Items {
 		itemsUpdate["itemsSold."+item.Name] = item.Quantity
 	}
 	update["$inc"].(bson.M)["itemsSold"] = itemsUpdate
 
-	// Add payment method update
 	update["$inc"].(bson.M)["paymentSummary."+randomSales.PaymentMethod] = 1
 
-	// Execute upsert operation
 	if _, err := collection.UpdateOne(ctx, filter, update, options.Update().SetUpsert(true)); err != nil {
 		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error updating daily sales: %v", err))
 	}
 
-	// Recalculate profit
 	if err := recalculateDailyProfit(middlewares.DailyAnalytics, currentDate); err != nil {
 		return respondWithError(w, http.StatusInternalServerError, fmt.Sprintf("error recalculating profit: %v", err))
 	}

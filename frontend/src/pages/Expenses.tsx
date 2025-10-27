@@ -31,6 +31,7 @@ export default function Expenses() {
   const { expenses, addExpense } = useSales();
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -51,6 +52,7 @@ export default function Expenses() {
       const data = await request.json();
 
       const dataFetched: expensesFetched = data.data
+      // console.log(dataFetched);
       
       } catch (error) {
         console.error(error);
@@ -88,9 +90,19 @@ export default function Expenses() {
       });
 
       if (!request.ok) {
+        setSuccess(null);
+        alert("Error posting expense data!");
         setError("posting expense data!");
         throw new Error("Error posting expense data!");
       }
+
+      alert("Expense added successfully!");
+      setSuccess("Expense added successfully!");
+      setError(null);
+
+      setTimeout(() => {
+        setSuccess(null);
+      }, 3000);
 
       setFormData({
         description: '',
@@ -319,6 +331,8 @@ export default function Expenses() {
           </div>
         )}
       </div>
+      {error && <div className="text-red-600 text-center">{error}</div>}
+      {success && <div className="text-green-600 text-center">{success}</div>}
     </div>
   )
 }

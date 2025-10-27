@@ -7,7 +7,6 @@ import {
   Search,
   Filter,
 } from "lucide-react";
-import { useSales } from "../context/SalesContext";
 import { format } from "date-fns";
 import {
   LineChart,
@@ -20,11 +19,18 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { Sale } from "../types";
+
+interface Sales {
+  sale: Sale[]
+
+}
 
 export default function Sales() {
-  const { sales, menuItems } = useSales();
+  // const { sales, menuItems } = useSales();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterPayment, setFilterPayment] = useState<"all" | "mpesa" | "cash">("all");
+  const [sales, setSales] = useState<Sales[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -44,7 +50,6 @@ export default function Sales() {
     })();
   }, []);
 
-  // Filter sales based on search and payment method
   const filteredSales = sales.filter((sale) => {
     const matchesSearch =
       sale.mpesaCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,7 +60,6 @@ export default function Sales() {
     return matchesSearch && matchesPayment;
   });
 
-  // Calculate metrics
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
   const mpesaSales = sales.filter((s) => s.paymentMethod === "mpesa");
   const cashSales = sales.filter((s) => s.paymentMethod === "cash");

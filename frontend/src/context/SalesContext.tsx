@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { Sale, MenuItem, InventoryExpense, DailySummary, WeeklyAnalysis } from '../types/index'
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns'
 
@@ -168,7 +168,23 @@ export function SalesProvider({ children }: { children: React.ReactNode }) {
       category: "Sides",
       cost: 135
     }
-  ])
+  ]);
+
+  useEffect(() => {
+    async function fetchSalesData () {
+      try {
+        const response = await fetch("");
+
+        if (!response.ok) {
+          
+        }
+      } catch (error) {
+        
+      }
+    }
+
+    fetchSalesData();
+  }, []);
 
   const addSale = (saleData: Omit<Sale, 'id' | 'timestamp'>) => {
     const newSale: Sale = {
